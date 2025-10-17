@@ -47,10 +47,22 @@ public class FlightSearchTest {
             String ret, String dst, String seat,
             int a, int c, int i, boolean expectedValid) {
 
+        // Pre-condition: all fields should be default
+        assertNull(fs.getDepartureDate());
+        assertNull(fs.getDepartureAirportCode());
+        assertFalse(fs.isEmergencyRowSeating());
+        assertNull(fs.getReturnDate());
+        assertNull(fs.getDestinationAirportCode());
+        assertNull(fs.getSeatingClass());
+        assertEquals(0, fs.getAdultPassengerCount());
+        assertEquals(0, fs.getChildPassengerCount());
+        assertEquals(0, fs.getInfantPassengerCount());
+
         boolean actual = fs.runFlightSearch(dep, depAir, er, ret, dst, seat, a, c, i);
         assertEquals(expectedValid, actual, "return value mismatch");
 
         if (expectedValid) {
+            // Post-condition: attributes must match parameters
             assertEquals(dep,  fs.getDepartureDate());
             assertEquals(depAir, fs.getDepartureAirportCode());
             assertEquals(er,   fs.isEmergencyRowSeating());
@@ -61,6 +73,7 @@ public class FlightSearchTest {
             assertEquals(c,    fs.getChildPassengerCount());
             assertEquals(i,    fs.getInfantPassengerCount());
         } else {
+            // Post-condition: no change after invalid call
             assertNull(fs.getDepartureDate());
             assertNull(fs.getDepartureAirportCode());
             assertFalse(fs.isEmergencyRowSeating());
@@ -73,15 +86,22 @@ public class FlightSearchTest {
         }
     }
 
+
     // C1..C11 (each has 2 rows)
 
     static Stream<Arguments> c1_totalPassengersBounds() {
         String dep = tomorrow(), ret = plusDays(5);
         return Stream.of(
-            args(dep, "mel", false, ret, "pvg", "economy", 0, 0, 0, false),   // 0 total
-            args(dep, "mel", false, ret, "pvg", "economy", 9, 1, 0, false)    // 10 total
+            // NEW: negative child count -> invalid
+            args(dep, "mel", false, ret, "pvg", "economy", 2, -1, 0, false),
+            // NEW: negative infant count -> invalid
+            args(dep, "mel", false, ret, "pvg", "economy", 2, 0, -1, false),
+            // Existing rows:
+            args(dep, "mel", false, ret, "pvg", "economy", 0, 0, 0, false),
+            args(dep, "mel", false, ret, "pvg", "economy", 9, 1, 0, false)
         );
     }
+
     @ParameterizedTest @MethodSource("c1_totalPassengersBounds")
     @DisplayName("C1: total passengers must be 1..9")
     void c1(String dep, String depAir, boolean er, String ret, String dst, String seat, int a, int c, int i, boolean ok) {
